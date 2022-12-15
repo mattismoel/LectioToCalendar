@@ -75,8 +75,8 @@ class Lectio:
 
 		return result
 	
-	def getSchedule(self, week):
-		result = schedule.schedule(self, self.Session, self.SchoolId, self.studentId, week)
+	def getSchedule(self):
+		result = schedule.schedule(self, self.Session, self.SchoolId, self.studentId)
 
 		return result
 

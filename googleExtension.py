@@ -1,4 +1,5 @@
-import os, sys, datetime
+import os, sys
+import datetime
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from google.auth.transport.requests import Request

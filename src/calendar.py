@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
 from lectio import Lectio
   
 class lectioToCalendar:
-    def __init__(self, usr, psw, schl_id):
+    def __init__(self, usr, psw, schl_id, cal_id):
 
         # Login using LectioScraper - [https://github.com/fredrikj31/LectioScraper]
         self.lec = Lectio(usr, psw, schl_id)
@@ -26,7 +26,7 @@ class lectioToCalendar:
         
         
         # Define id of target calendar - use 'service.calendarList()' to see all id's
-        self.calendarId = '7bdf11c5c1ac6f4032c851e580b7df97365f8305fe43e56968812b3fb454a86b@group.calendar.google.com'
+        self.calendarId = cal_id
         
         # Define scope, Google Calendar API
         self.SCOPES = ['https://www.googleapis.com/auth/calendar']

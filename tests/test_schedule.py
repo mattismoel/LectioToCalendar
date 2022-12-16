@@ -7,4 +7,4 @@ from src.lectio import Lectio
 
 lec = Lectio(lectioUsername, lectioPassword, schoolId)
 
-print(lec.getSchedule())
+print(lec.getSchedule("512022")) # Format: WWYYYY

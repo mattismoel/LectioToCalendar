@@ -5,7 +5,7 @@ This extension of **Lectio Scraper**, embeds Lectio events into Google Calendar 
 ```python
 from calendar import lectioToCalendar
 
-ltc = lectioToCalendar(lectioUsername, lectioPassword, schoolId)
+ltc = lectioToCalendar(lectioUsername, lectioPassword, schoolId, calendarId)
 schedule1 = ltc.getFormattedSchedule("512022") # Format: WWYYYY
 
 ltc.updateCalendar(schedule1)

@@ -62,7 +62,7 @@ class lectioToCalendar:
         lectio_scheme = self.lec.getSchedule(week)
         Schedule = []
         
-        # Formatting all event in the given week
+        # Formatting all events in the given week
         for lectio_event in lectio_scheme:
             
             if lectio_event["Time"] == " ":

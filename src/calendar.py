@@ -9,7 +9,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.lectio import Lectio
+from lectio import Lectio
   
 class lectioToCalendar:
     def __init__(self, usr, psw, schl_id):

@@ -54,48 +54,8 @@ class Lectio:
 		result = schools.schools(self)
 
 		return result
-
-	def getExercise(self, ExerciseId):
-		result = exercise.exercise(self, self.Session, self.SchoolId, self.studentId, ExerciseId)
-
-		return result
-	
-	def getExercises(self):
-		result = exercises.exercises(self, self.Session, self.SchoolId, self.studentId)
-
-		return result
-	
-	def getMessages(self):
-		result = messages.messages(self, self.Session, self.SchoolId, self.studentId)
-
-		return result
-	
-	def getMessage(self, MessageId):
-		result = message.message(self, self.Session, self.SchoolId, self.studentId, MessageId)
-
-		return result
 	
 	def getSchedule(self, week):
 		result = schedule.schedule(self, self.Session, self.SchoolId, self.studentId, week)
-
-		return result
-
-	def getStudyProgramme(self):
-		result = studyProgramme.studyProgramme(self, self.Session, self.SchoolId, self.studentId)
-
-		return result
-
-	def getUnreadMessages(self):
-		result = unreadMessages.unreadMessages(self, self.Session, self.SchoolId)
-
-		return result
-	
-	def getGrades(self):
-		result = grades.grades(self, self.Session, self.SchoolId, self.studentId)
-
-		return result
-
-	def getDashboard(self):
-		result = dashboard.dashboard(self, self.Session, self.SchoolId)
 
 		return result

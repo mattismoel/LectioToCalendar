@@ -3,26 +3,6 @@ import requests
 from lxml import html
 from bs4 import BeautifulSoup
 
-# FINISH OUTPUT
-"""
-[
-	{
-		"LessonId": "(Lesson Id)",
-		"Status": "(Status)",
-		"Title": "(Title)",
-		"Time": "(Time)",
-		"Team": "(Team)",
-		"Teacher": "(Teacher)",
-		"Room": "(Room)",
-        "Note": "(Note)"
-	},
-	{
-		...
-	}
-]
-
-"""
-
 def schedule(self, Session, SchoolId, StudentId, WeekId):
 	SCHEDULE_URL = "https://www.lectio.dk/lectio/{}/SkemaNy.aspx?type=elev&elevid={}&week={}".format(SchoolId, StudentId, WeekId)
 

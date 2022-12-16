@@ -1,7 +1,7 @@
 This extension of **Lectio Scraper**, embeds Lectio events into Google Calendar using [this api](https://developers.google.com/calendar/api).
 
 ## Preparation
-Start by [creating a new project](https://console.cloud.google.com/projectcreate) at Google Cloud console. Enable the Calendar API and create/enable credentials (then download the credentials.json file into the *src* folder). 
+Start by [creating a new project](https://console.cloud.google.com/projectcreate) at Google Cloud console. Enable the Calendar API, go to credentials, and create an OAuth 2.0 client (then download the new credentials.json file into the *src* folder). 
 
 
 

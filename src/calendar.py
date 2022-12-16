@@ -18,11 +18,11 @@ class lectioToCalendar:
         self.lec = Lectio(usr, psw, schl_id)
         
         # Load abbreviations/codes for activities
-        if os.path.exists('codes.json'):
-            f = open('codes.json')
+        if os.path.exists('abbreviations.json'):
+            f = open('abbreviations.json')
             self.codes = json.load(f)
         else:
-            raise Exception("File 'codes.json' not found :(")
+            raise Exception("File 'abbreviations.json' not found :(")
         
         
         # Define id of target calendar - use 'service.calendarList()' to see all id's

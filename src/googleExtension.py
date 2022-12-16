@@ -1,5 +1,6 @@
 import os, sys
 import datetime
+import json
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from google.auth.transport.requests import Request
@@ -9,116 +10,205 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from src.lectio import Lectio
-lec = Lectio()
+  
+class lectioToCalendar:
+    def __init__(self, usr, psw, schl_id):
 
-SCOPES = ['https://www.googleapis.com/auth/calendar']
-calendarId='7bdf11c5c1ac6f4032c851e580b7df97365f8305fe43e56968812b3fb454a86b@group.calendar.google.com'
+        # Login using LectioScraper - [https://github.com/fredrikj31/LectioScraper]
+        self.lec = Lectio(usr, psw, schl_id)
+        
+        # Load abbreviations/codes for activities
+        if os.path.exists('codes.json'):
+            f = open('codes.json')
+            self.codes = json.load(f)
+        else:
+            raise Exception("File 'codes.json' not found :(")
+        
+        
+        # Define id of target calendar - use 'service.calendarList()' to see all id's
+        self.calendarId = '7bdf11c5c1ac6f4032c851e580b7df97365f8305fe43e56968812b3fb454a86b@group.calendar.google.com'
+        
+        # Define scope, Google Calendar API
+        self.SCOPES = ['https://www.googleapis.com/auth/calendar']
+        
+        # Load Google Calendar API credentials/token
+        self.creds = None
 
-creds = None
+        if os.path.exists('token.json'):
+            self.creds = Credentials.from_authorized_user_file('token.json', self.SCOPES)
 
-if os.path.exists('token.json'):
-    creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        if not self.creds or not self.creds.valid: #Login if no token is found
+            if self.creds and self.creds.expired and self.creds.refresh_token:
+                self.creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', self.SCOPES)
+                self.creds = flow.run_local_server(port=0)
 
-if not creds or not creds.valid:
-    if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-    else:
-        flow = InstalledAppFlow.from_client_secrets_file(
-            'credentials.json', SCOPES)
-        creds = flow.run_local_server(port=0)
+            with open('token.json', 'w') as token:
+                token.write(self.creds.to_json())
 
-    with open('token.json', 'w') as token:
-        token.write(creds.to_json())
-
-def fetchWeekSchedule(week):
-    lectio_scheme = lec.getSchedule(week)
-    Schedule = []
+    def lessonCodeToText(self, code):
+        # Finds matching names for abbreviations/codes of activities
+        new_name = code
+        
+        for i in self.codes:
+            if i == code:
+                new_name = self.codes[i]
+        return new_name
+        
+    def getFormattedSchedule(self, week):
+        # Gets Lectio schedule and formats to Google Calendar format
     
-    for lectio_event in lectio_scheme:
+        lectio_scheme = self.lec.getSchedule(week)
+        Schedule = []
         
-        if lectio_event["Time"] == " ":
-            continue
-        
-        if lectio_event["Title"] == " ":
-            summary = lectio_event["Team"]
-        else:
-            summary = lectio_event["Title"]
+        # Formatting all event in the given week
+        for lectio_event in lectio_scheme:
             
-        if lectio_event["Status"] == "Aflyst!":
-            color = "4" #red (11)
-            summary = "Aflyst! " + summary
+            if lectio_event["Time"] == " ":
+                continue
             
-        elif lectio_event["Status"] == "Ændret!":
-            color = "2" #green (10)
-        else:
-            color = "1" #blue (9)
-            
-        if lectio_event["Room"] != " ":
-            location = "Lokale: " + lectio_event["Room"]
-        else:
-            location = lectio_event["Room"]
-            
-        description = lectio_event["Teacher"]
-        
-        if lectio_event["Note"] != []:
-            note_txt = "<ul>"
-            for note in lectio_event["Note"]:
-                note_txt = note_txt + "<li>" + note[2:] + "</li>"
+            if lectio_event["Title"] == " ":
+                # Set title to generic if none are specified
+                summary = self.lessonCodeToText(lectio_event["Team"])
+            else:
+                summary = lectio_event["Title"] + " - " + self.lessonCodeToText(lectio_event["Team"])
                 
-            description = description + "<br><br><b>Note/lektie:</b> " + note_txt.replace("[...]", "") + "</ul>"
-        else:
-            description += "<br>"
+            if lectio_event["Status"] == "Aflyst!":
+                color = "4" #for bold red (11)
+                summary = "Aflyst! " + summary
+                
+            elif lectio_event["Status"] == "Ændret!":
+                color = "2" #bold green (10)
+            else:
+                color = "1" #bold blue (9)
             
-        description = description + '<a href="https://www.lectio.dk/lectio/143/aktivitet/aktivitetforside2.aspx?absid=' + lectio_event["Id"] + '">Lectio event</a>'
-        
-        times = lectio_event["Time"].split(" til ")
-        date = times[0].split()[0].split("-")
-        formatted_date = date[1] + "-" + date[0].split("/")[1] + "-" + date[0].split("/")[0]
-        
-        dateTime_start = formatted_date + 'T' + times[0].split()[1] + ':00+01:00'
-        dateTime_end = formatted_date + 'T' + times[1] + ':00+01:00'
-        
-        #print(dateTime_start)
-        #print(dateTime_end)
-        
-        event = {
-          'id': lectio_event["Id"],
-          'summary': summary,
-          'location': location,
-          'description': description,
-          'locked': 'true',
-          'colorId': color,
-          'source.title': "Lectio event",
-          'source.url': 'https://www.lectio.dk/lectio/143/aktivitet/aktivitetforside2.aspx?absid=' + lectio_event["Id"],
-          'start': {
-            'dateTime': dateTime_start,
-            'timeZone': 'Europe/Copenhagen',
-          },
-          'end': {
-            'dateTime': dateTime_end,
-            'timeZone': 'Europe/Copenhagen',
-          }
-        }
-        
-        Schedule.append(event)
-        
-    return Schedule
+            location = None
+            if lectio_event["Room"] != " ":
+                location = "Lokale: " + lectio_event["Room"]
+            
+            description = ""
+            if lectio_event["Teacher"] != " ":
+                description = lectio_event["Teacher"]
+            
+            if lectio_event["Note"] != []:
+                # Listing notes using basic html (only works in google calendar)
+            
+                note_txt = "<ul>"
+                used_notes = []
+                
+                for note in lectio_event["Note"]:
+                    if note[:2] == "- ":
+                        # Bullet point found, adding and looking for sub-bullet points
+                        note_txt += "<li>" + note[2:] + "</li>"
+                        
+                        search_for_quote = True
+                        stop_search = False
+                        
+                        for i in lectio_event["Note"]:
+                            if stop_search == True:
+                                break
+                                
+                            if search_for_quote == True:
+                                if i == note:
+                                    search_for_quote = False
+                            else:
+                                # Continuing from parent bullet point
+                                
+                                if stop_search == True:
+                                    continue
+                                else:
+                                    if i[:2] == "- ":
+                                        # No sub-bullet points were found
+                                        stop_search == True
+                                    else:
+                                        if i.lstrip()[:1] == "(" and i[-1:] == ")":
+                                            # If only one sub-point
+                                            note_txt += "<ul><li>" + i.lstrip()[1:][:-1] + "</li></ul>"
+                                            stop_search == True
+                                        else:
+                                            if i.lstrip()[:1] == "(":
+                                                # First sub-point
+                                                note_txt += "<ul><li>" + i.lstrip()[1:] + "</li>"
+                                                
+                                            elif i[-1:] == ")":
+                                                # Last sub-point
+                                                note_txt += "<li>" + i.lstrip()[:-1] + "</li></ul>"
+                                                stop_search == True
+                                            
+                                            else:
+                                                # Middle sub-point
+                                                note_txt += "<li>" + i.lstrip() + "</li>"
+                                                
+                                        used_notes.append(i)
+                    else:
+                        if note not in used_notes:
+                            # Edge case notes
+                            note_txt += "<li>" + note.replace("•", "").lstrip() + "</li>"
+                            
+                if lectio_event["Teacher"] != " ":
+                    # Line break to make space between lines
+                    description += "<br><br>"
+                    
+                description += "<b>Note/lektie:</b> " + note_txt.replace("[...]", "") + "</ul>"
+            else:
+                if lectio_event["Teacher"] != " ":
+                    # Line break to make space between lines
+                    description += "<br>"
+            
+            # Adding link to the original Lectio event
+            description += '<a href="https://www.lectio.dk/lectio/143/aktivitet/aktivitetforside2.aspx?absid=' + lectio_event["Id"] + '">Læs mere</a>'
+            
+            # Formatting date and time to correct format - from "DD/MM-YYY HH:MM til HH:MM" to "YYYY-MM-DDTHH:MM:SS.MMMZ"
+            times = lectio_event["Time"].split(" til ")
+            date = times[0].split()[0].split("-")
+            formatted_date = date[1] + "-" + date[0].split("/")[1] + "-" + date[0].split("/")[0]
+            
+            dateTime_start = formatted_date + 'T' + times[0].split()[1] + ':00+01:00'
+            dateTime_end = formatted_date + 'T' + times[1] + ':00+01:00'
+            
+            # Building dict with all necessary information
+            event = {
+              'id': lectio_event["Id"],
+              'summary': summary,
+              'description': description,
+              'locked': 'true',
+              'colorId': color,
+              'source.title': "Lectio event",
+              'source.url': 'https://www.lectio.dk/lectio/143/aktivitet/aktivitetforside2.aspx?absid=' + lectio_event["Id"],
+              'start': {
+                'dateTime': dateTime_start,
+                'timeZone': 'Europe/Copenhagen',
+              },
+              'end': {
+                'dateTime': dateTime_end,
+                'timeZone': 'Europe/Copenhagen',
+              }
+            }
+            if location != None:
+                # If location is relevant, then add it
+                event['location'] = location
+            
+            # Append to list of all events
+            Schedule.append(event)
+            
+        return Schedule
 
-def updateGoogleCalendar(week):
-    print("Fetching events (" + week + ")...")
+    def updateCalendar(self, weekSchedule):
+        # Inserting events into specified Google Calendar
+        
+        print("Updating calendar...")
+        service = build('calendar', 'v3', credentials=self.creds)
 
-    weekSchedule = fetchWeekSchedule(week)
-    service = build('calendar', 'v3', credentials=creds)
-
-    for i in weekSchedule:
-        try:
-            service.events().insert(calendarId=calendarId, body=i).execute()
-        except HttpError:
+        for i in weekSchedule:
             try:
-                service.events().update(calendarId=calendarId, eventId=i['id'], body=i).execute()
-            except:
-                print("Event not inserted/updated: " + i["summary"])
-                
-    print("Weekly schedule updated!")
-    
-updateGoogleCalendar("512022")
+                # Creating new event
+                service.events().insert(calendarId=self.calendarId, body=i).execute()
+            except HttpError:
+                try:
+                    # Updating existing event
+                    service.events().update(calendarId=self.calendarId, eventId=i['id'], body=i).execute()
+                except:
+                    print("Event not inserted/updated: " + i["summary"])
+
+        print("Weekly schedule updated!")

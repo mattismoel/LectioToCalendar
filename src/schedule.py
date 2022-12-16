@@ -13,7 +13,8 @@ from bs4 import BeautifulSoup
 		"Time": "(Time)",
 		"Team": "(Team)",
 		"Teacher": "(Teacher)",
-		"Room": "(Room)"
+		"Room": "(Room)",
+        "Note": "(Note)"
 	},
 	{
 		...
@@ -21,7 +22,6 @@ from bs4 import BeautifulSoup
 ]
 
 """
-
 
 def schedule(self, Session, SchoolId, StudentId, WeekId):
 	SCHEDULE_URL = "https://www.lectio.dk/lectio/{}/SkemaNy.aspx?type=elev&elevid={}&week={}".format(SchoolId, StudentId, WeekId)
@@ -34,11 +34,10 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
 	fullSchedule = []
 	Schedule = {}
 
-
 	for schedule in scheduleContainer:
         
 		rows = schedule['data-additionalinfo'].split("\n")
-		timeStructure = re.compile('\d{2}/\d+-\d{4} \d{2}:\d{2} til \d{2}:\d{2}')
+		timeStructure = re.compile('\d+/\d+-\d{4} \d{2}:\d{2} til \d{2}:\d{2}')
 		teamStructure = re.compile('Hold: ')
 		teacherStructure = re.compile('Lærer.*: ')
 		roomStructure = re.compile('Lokale.*: ')
@@ -57,7 +56,7 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
 		lessonId = lessonIdSplit2[0]
 		
 		
-		#print(schedule) #Check if there is a status
+		#Check if there is a status
 		if rows[0] == "Aflyst!" or rows[0] == "Ændret!":
 			#print("found a status: {}".format(rows[0]))
 
@@ -76,6 +75,7 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
 			status = " "
 
 			#Check if there is a title
+            
 			if timeStructure.match(rows[0]):
 				#print("did not find a title")
 				title = " "
@@ -89,7 +89,7 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
 		room = list(filter(roomStructure.match, rows))
 		note = list(filter(noteStructure.match, rows))
         
-		if len(time) == 0:#If list is empty (There is no room or teacher) then make list empty
+		if len(time) == 0: #If list is empty (There is no room or teacher) then make list empty
 			time = " "
 		else:
 			time = time[0]
@@ -109,7 +109,7 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
 		else:
 			room = room[0].split(":")[1].strip()
 
-		Schedule['Note'] = note #.split(":")[2]
+		#.split(":")[2]
 		Schedule['Status'] = status
 		Schedule['Title'] = title
 		Schedule['Time'] = time
@@ -117,19 +117,18 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
 		Schedule['Teacher'] = teacher
 		Schedule['Room'] = room
 		Schedule['Id'] = lessonId
-		
+		Schedule['Note'] = note
+        
 		fullSchedule.append(Schedule)
+		
+		#DEBUG PURPOSES
+		
+		"""print(title)
+		print(team)
+		print(teacher)
+		print(room)"""
+		
 		Schedule = {}
-
-		
-		#print(note)#DEBUG PURPOSES
-		"""
-		print(time[0])
-		print(team[0])
-		print(teacher[0])
-		print(room[0])
-		
-		print("---------------------------")"""
 
 		
 	return fullSchedule

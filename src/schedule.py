@@ -28,6 +28,8 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
 			lessonIdSplit1 = schedule['href'].split("absid=")
 		elif "ProeveholdId" in schedule['href']:
 			lessonIdSplit1 = schedule['href'].split("ProeveholdId=")
+		elif "aftaleid" in schedule['href']:
+			lessonIdSplit1 = schedule['href'].split("aftaleid=")
 		else:
 			print("Error")
 			return False

@@ -200,7 +200,9 @@ class lectioToCalendar:
         return Schedule
 
     def updateCalendar(self, weekSchedule):
-
+        if weekSchedule == []:
+            return
+        
         # Calculating first datetime of week
         first_event_datetime = datetime.datetime.strptime(weekSchedule[0]["start"]["dateTime"][:-6], '%Y-%m-%dT%H:%M:%S')
         week_start_datetime = (first_event_datetime - datetime.timedelta(days=first_event_datetime.weekday())).replace(minute=0, hour=0, second=0)
@@ -260,7 +262,7 @@ class lectioToCalendar:
                     # Updating existing event
                     self.service.events().update(calendarId=self.calendarId, eventId=i['id'], body=i).execute()
                 except:
-                    print("Existing event not updated: " + i["summary"])
+                    print("Existing event not updated: " + i['id'])
 
         #print("Weekly schedule updated!")
             

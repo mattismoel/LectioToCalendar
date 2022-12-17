@@ -47,6 +47,8 @@ class lectioToCalendar:
             with open('token.json', 'w') as token:
                 token.write(self.creds.to_json())
 
+        self.service = build('calendar', 'v3', credentials=self.creds)
+        
     def lessonCodeToText(self, code):
         # Finds matching names for abbreviations/codes of activities
         new_name = code
@@ -72,7 +74,10 @@ class lectioToCalendar:
                 # Set title to generic if none are specified
                 summary = self.lessonCodeToText(lectio_event["Team"])
             else:
-                summary = lectio_event["Title"] + " - " + self.lessonCodeToText(lectio_event["Team"])
+                if lectio_event["Team"] != " ":
+                    summary = lectio_event["Title"] + " - " + self.lessonCodeToText(lectio_event["Team"])
+                else:
+                    summary = lectio_event["Title"]
                 
             if lectio_event["Status"] == "Aflyst!":
                 color = "4" #for bold red (11)
@@ -195,20 +200,67 @@ class lectioToCalendar:
         return Schedule
 
     def updateCalendar(self, weekSchedule):
-        # Inserting events into specified Google Calendar
-        
-        print("Updating calendar...")
-        service = build('calendar', 'v3', credentials=self.creds)
 
+        # Calculating first datetime of week
+        first_event_datetime = datetime.datetime.strptime(weekSchedule[0]["start"]["dateTime"][:-6], '%Y-%m-%dT%H:%M:%S')
+        week_start_datetime = (first_event_datetime - datetime.timedelta(days=first_event_datetime.weekday())).replace(minute=0, hour=0, second=0)
+        week_end_datetime = (week_start_datetime + datetime.timedelta(days=6)).replace(minute=59, hour=23, second=59)
+
+        #print(week_start_datetime.strftime("%Y-%m-%dT%H:%M:%S+01:00"))
+        #print(week_end_datetime.strftime("%Y-%m-%dT%H:%M:%S+01:00"))
+        
+        # Getting events from calendar
+        events = self.service.events().list(calendarId=self.calendarId, timeMin=week_start_datetime.strftime("%Y-%m-%dT%H:%M:%S+01:00"), timeMax=week_end_datetime.strftime("%Y-%m-%dT%H:%M:%S+01:00")).execute()
+        
+        old_events = []
+        new_events = []
+        
+        for old_event in events['items']:
+            old_events.append(old_event["id"])
+            
+        for new_event in weekSchedule:
+            new_events.append(new_event["id"])
+        
+        extra_events = []
+        missing_events = []
+        
+        # Looking for differences between Google Calendar and Lectio schedule
+        if sorted(new_events) != sorted(old_events):
+            extra_events = list(set(sorted(old_events)) - set(sorted(new_events)))
+            missing_events = list(set(sorted(new_events)) - set(sorted(old_events)))
+
+        #print("Extra events (to be deleted): " + str(extra_events))
+        #print("Missing events (to be added): " + str(missing_events))
+        
+        for extra_event in extra_events:
+            # Deleting extra events
+            self.service.events().delete(calendarId=self.calendarId, eventId=extra_event).execute()
+        
+        for missing_event in missing_events:
+            for event in weekSchedule:
+                if event["id"] == missing_event:
+                    # Inserting new events into specified Google Calendar
+                    try:
+                        self.service.events().insert(calendarId=self.calendarId, body=event).execute()
+                        #print(str(missing_event) + " added to the calendar")
+                        break
+                    except HttpError:
+                        # Updating missing events for specified Google Calendar
+                        try:
+                            self.service.events().update(calendarId=self.calendarId, eventId=missing_event, body=event).execute()
+                            #print(str(missing_event) + " updated in the calendar")
+                            break
+                        except:
+                            print("Missing event not inserted/updated: " + missing_event)
+                            
+        # Updating remaining events for specified Google Calendar
         for i in weekSchedule:
-            try:
-                # Creating new event
-                service.events().insert(calendarId=self.calendarId, body=i).execute()
-            except HttpError:
+            if i["id"] not in extra_events and i["id"] not in missing_events:
                 try:
                     # Updating existing event
-                    service.events().update(calendarId=self.calendarId, eventId=i['id'], body=i).execute()
+                    self.service.events().update(calendarId=self.calendarId, eventId=i['id'], body=i).execute()
                 except:
-                    print("Event not inserted/updated: " + i["summary"])
+                    print("Existing event not updated: " + i["summary"])
 
-        print("Weekly schedule updated!")
+        #print("Weekly schedule updated!")
+            

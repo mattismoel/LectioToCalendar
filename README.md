@@ -2,7 +2,7 @@ This extension to **LectioScraper**, embeds Lectio events into Google Calendar u
 
 ## Preparation
 Start by [creating a new project](https://console.cloud.google.com/projectcreate) at Google Cloud console. Enable the Calendar API, go to credentials, and create an OAuth 2.0 client (then download the new credentials.json file into the *src* folder).<br><br>
-If you don't want to use your primary calender for this, get a list over all of your ID's using [service.calendarList()](https://developers.google.com/calendar/api/v3/reference/calendarList/list). The default value of ```calendarId``` is "primary".
+If you don't want to use your primary calender for this, get a list over all of your ID's using [service.calendarList()](https://developers.google.com/calendar/api/v3/reference/calendarList/list). The default value of ```calendarId``` should be "primary".
 
 
 

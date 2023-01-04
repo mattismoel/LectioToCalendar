@@ -13,9 +13,10 @@ from lectio import Lectio
   
 class lectioToCalendar:
     def __init__(self, usr, psw, schl_id, cal_id):
-
-        # Login using LectioScraper - [https://github.com/fredrikj31/LectioScraper]
-        self.lec = Lectio(usr, psw, schl_id)
+    
+        self.user_name = usr
+        self.password = psw
+        self.school_id = schl_id
         
         # Load abbreviations/codes for activities
         if os.path.exists('abbreviations.json'):
@@ -61,6 +62,11 @@ class lectioToCalendar:
     def getFormattedSchedule(self, week):
         # Gets Lectio schedule and formats to Google Calendar format
     
+        # Login using LectioScraper - [https://github.com/fredrikj31/LectioScraper]
+        # Move line to __init__ if you don't expect to use class for long periods of time (lectio timeouts)
+        self.lec = Lectio(self.user_name, self.password, self.school_id)
+        
+        # Scrape schedule form Lectio 
         lectio_scheme = self.lec.getSchedule(week)
         Schedule = []
         
@@ -162,7 +168,7 @@ class lectioToCalendar:
                     description += "<br>"
             
             # Adding link to the original Lectio event
-            description += '<a href="https://www.lectio.dk/lectio/143/aktivitet/aktivitetforside2.aspx?absid=' + lectio_event["Id"] + '">Læs mere</a>'
+            description += '<a href="https://www.lectio.dk/lectio/143/' + lectio_event["EventLink"] + lectio_event["Id"] + '">Læs mere</a>'
             
             # Formatting date and time to correct format - from "DD/MM-YYY HH:MM til HH:MM" to "YYYY-MM-DDTHH:MM:SS.MMMZ"
             times = lectio_event["Time"].split(" til ")
@@ -201,6 +207,7 @@ class lectioToCalendar:
 
     def updateCalendar(self, weekSchedule):
         if weekSchedule == []:
+            print("Empty week schedule: " + str(weekSchedule))
             return
         
         # Calculating first datetime of week

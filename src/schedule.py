@@ -26,12 +26,15 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
         # Getting the lesson id & Get the lesson if normal
 		if "absid" in schedule['href']:
 			lessonIdSplit1 = schedule['href'].split("absid=")
+			eventLink = "aktivitet/aktivitetforside2.aspx?absid="
 		elif "ProeveholdId" in schedule['href']:
 			lessonIdSplit1 = schedule['href'].split("ProeveholdId=")
+			eventLink = "proevehold.aspx?type=proevehold&ProeveholdId="
 		elif "aftaleid" in schedule['href']:
 			lessonIdSplit1 = schedule['href'].split("aftaleid=")
+			eventLink = "privat_aftale.aspx?aftaleid="
 		else:
-			print("Error")
+			print("Error, unable to get lesson id")
 			return False
 		
 		lessonIdSplit2 = lessonIdSplit1[1].split("&prevurl=")
@@ -100,6 +103,7 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
 		Schedule['Room'] = room
 		Schedule['Id'] = lessonId
 		Schedule['Note'] = note
+		Schedule['EventLink'] = eventLink
         
 		fullSchedule.append(Schedule)
 		

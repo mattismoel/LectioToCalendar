@@ -133,4 +133,4 @@ dmypy.json
 credentials.json
 token.json
 
-server/
+private_server/

@@ -17,5 +17,8 @@ schedule1 = ltc.getFormattedSchedule("512022") # Format: WWYYYY
 ltc.updateCalendar(schedule1)
 ```
 
+## The Server
+This repository also includes a [server](/server/), that can be hosted to always keep your calendar up to date. You can tune the server to your needs by changing variables, specifying how often it should be updating and how many weeks into the future it should update.
+
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)

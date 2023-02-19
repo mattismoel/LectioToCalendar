@@ -30,18 +30,22 @@ class lectioToCalendar:
         self.calendarId = cal_id
         
         # Define scope, Google Calendar API
-        self.SCOPES = ['https://www.googleapis.com/auth/calendar']
+        self.SCOPES = ['https://www.googleapis.com/auth/calendar.events']
         
-        # Load Google Calendar API credentials/token
+        # Load Google API OAuth2 token
         self.creds = None
 
         if os.path.exists('token.json'):
             self.creds = Credentials.from_authorized_user_file('token.json', self.SCOPES)
-
-        if not self.creds or not self.creds.valid: #Login if no token is found
-            if self.creds and self.creds.expired and self.creds.refresh_token:
+        
+        self.checkCredentials()
+    
+    def checkCredentials(self):
+        if not self.creds or not self.creds.valid: 
+            if self.creds and self.creds.expired and self.creds.refresh_token: # Refresh token if expired
                 self.creds.refresh(Request())
-            else:
+                
+            else: #Login if no credentials are found
                 flow = InstalledAppFlow.from_client_secrets_file('credentials.json', self.SCOPES)
                 self.creds = flow.run_local_server(port=0)
 
@@ -49,7 +53,7 @@ class lectioToCalendar:
                 token.write(self.creds.to_json())
 
         self.service = build('calendar', 'v3', credentials=self.creds)
-        
+
     def lessonCodeToText(self, code):
         # Finds matching names for abbreviations/codes of activities
         new_name = code
@@ -63,8 +67,9 @@ class lectioToCalendar:
         # Gets Lectio schedule and formats to Google Calendar format
     
         # Login using LectioScraper - [https://github.com/fredrikj31/LectioScraper]
-        # Move line to __init__ if you don't expect to use class for long periods of time (lectio timeouts)
+        # Move line to __init__ if you don't expect to use for long periods of time (lectio timeouts)
         self.lec = Lectio(self.user_name, self.password, self.school_id)
+        self.checkCredentials()
         
         # Scrape schedule form Lectio 
         lectio_scheme = self.lec.getSchedule(week)
@@ -161,7 +166,7 @@ class lectioToCalendar:
                     # Line break to make space between lines
                     description += "<br><br>"
                     
-                description += "<b>Note/lektie:</b> " + note_txt.replace("[...]", "") + "</ul>"
+                description += "<b>Lektier:</b> " + note_txt.replace("[...]", "") + "</ul>"
             else:
                 if lectio_event["Teacher"] != " ":
                     # Line break to make space between lines
@@ -207,7 +212,7 @@ class lectioToCalendar:
 
     def updateCalendar(self, weekSchedule):
         if weekSchedule == []:
-            print("Empty week schedule: " + str(weekSchedule))
+            #print("Empty week schedule: " + str(weekSchedule))
             return
         
         # Calculating first datetime of week

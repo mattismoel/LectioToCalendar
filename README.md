@@ -1,4 +1,4 @@
-This fork of **LectioScraper**, adds your Lectio events to Google Calendar using [this api](https://developers.google.com/calendar/api).
+This fork of [**LectioScraper**](https://github.com/fredrikj31/LectioScraper), adds your Lectio events to Google Calendar using [the Google Calendar API](https://developers.google.com/calendar/api).
 
 ## Preparation
 Start by [creating a new project](https://console.cloud.google.com/projectcreate) at Google Cloud console. Enable the Calendar API, go to credentials, and create an OAuth 2.0 client (then download the credentials.json file into your main script folder, eg. *server*). You will be prompted with a Google login screen first time running the script.<br><br>

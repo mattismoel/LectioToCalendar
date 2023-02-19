@@ -67,8 +67,9 @@ class lectioToCalendar:
         # Gets Lectio schedule and formats to Google Calendar format
     
         # Login using LectioScraper - [https://github.com/fredrikj31/LectioScraper]
-        # Move line to __init__ if you don't expect to use for long periods of time (lectio timeouts)
         self.lec = Lectio(self.user_name, self.password, self.school_id)
+        
+        # Refreshing Google Calendar API token if expired
         self.checkCredentials()
         
         # Scrape schedule form Lectio 

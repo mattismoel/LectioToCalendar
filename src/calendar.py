@@ -79,6 +79,9 @@ class lectioToCalendar:
         # Formatting all events in the given week
         for lectio_event in lectio_scheme:
             
+            if lectio_event["Status"] == "Aflyst!":
+                continue
+            
             if lectio_event["Time"] == " ":
                 continue
             
@@ -91,11 +94,7 @@ class lectioToCalendar:
                 else:
                     summary = lectio_event["Title"]
                 
-            if lectio_event["Status"] == "Aflyst!":
-                color = "4" #for bold red (11)
-                summary = "Aflyst! " + summary
-                
-            elif lectio_event["Status"] == "Ændret!":
+            if lectio_event["Status"] == "Ændret!":
                 color = "2" #bold green (10)
             else:
                 color = "1" #bold blue (9)
@@ -110,14 +109,15 @@ class lectioToCalendar:
             
             if lectio_event["Note"] != []:
                 # Listing notes using basic html (only works in google calendar)
-            
+
                 note_txt = "<ul>"
                 used_notes = []
-                
+
                 for note in lectio_event["Note"]:
                     if note[:2] == "- ":
                         # Bullet point found, adding and looking for sub-bullet points
-                        note_txt += "<li>" + note[2:] + "</li>"
+                        if note[2:] != "" and not note[2:].isspace():
+                            note_txt += "<li>" + note[2:] + "</li>"
                         
                         search_for_quote = True
                         stop_search = False
@@ -131,58 +131,70 @@ class lectioToCalendar:
                                     search_for_quote = False
                             else:
                                 # Continuing from parent bullet point
-                                
-                                if stop_search == True:
-                                    continue
+                                if i[:2] == "- ":
+                                    # No sub-bullet points were found
+                                    stop_search = True
+
                                 else:
-                                    if i[:2] == "- ":
-                                        # No sub-bullet points were found
-                                        stop_search == True
-                                    else:
-                                        if i.lstrip()[:1] == "(" and i[-1:] == ")":
-                                            # If only one sub-point
+                                        
+                                    if i.lstrip()[:1] == "(" and i[-1:] == ")":
+                                        # If only one sub-point
+                                        if i.lstrip()[1:][:-1] != "" and not i.lstrip()[1:][:-1].isspace():
                                             note_txt += "<ul><li>" + i.lstrip()[1:][:-1] + "</li></ul>"
-                                            stop_search == True
-                                        else:
-                                            if i.lstrip()[:1] == "(":
-                                                # First sub-point
+                                        stop_search = True
+                                        
+                                    else:
+                                        if i.lstrip()[:1] == "(":
+                                            # First sub-point
+                                            if i.lstrip()[1:] != "" and not i.lstrip()[1:].isspace():
                                                 note_txt += "<ul><li>" + i.lstrip()[1:] + "</li>"
-                                                
-                                            elif i[-1:] == ")":
-                                                # Last sub-point
-                                                note_txt += "<li>" + i.lstrip()[:-1] + "</li></ul>"
-                                                stop_search == True
                                             
-                                            else:
-                                                # Middle sub-point
+                                        elif i[-1:] == ")":
+                                            # Last sub-point
+                                            if i.lstrip()[:-1] != "" and not i.lstrip()[:-1].isspace():
+                                                note_txt += "<li>" + i.lstrip()[:-1] + "</li></ul>"
+                                            stop_search = True
+
+                                        else:
+                                            # Middle sub-point
+                                            if i.lstrip() != "" and not i.lstrip().isspace():
                                                 note_txt += "<li>" + i.lstrip() + "</li>"
-                                                
-                                        used_notes.append(i)
+                                            
+                                    used_notes.append(i)
                     else:
                         if note not in used_notes:
                             # Edge case notes
-                            note_txt += "<li>" + note.replace("•", "").lstrip() + "</li>"
+                            if note != "" and not note.isspace():
+                                note_txt += "<li>" + note.replace("•", "").lstrip() + "</li>"
                             
-                if lectio_event["Teacher"] != " ":
-                    # Line break to make space between lines
-                    description += "<br><br>"
-                    
-                description += "<b>Lektier:</b> " + note_txt.replace("[...]", "") + "</ul>"
+                
+                if note_txt != "<ul>":
+                    if lectio_event["Teacher"] != " ":
+                        # Line break to make space between lines
+                        description += "<br><br>"
+                        
+                    description += "<b>Lektier:</b> " + note_txt.replace("[...]", "") + "</ul>"
+                else:
+                    if lectio_event["Teacher"] != " " and lectio_event["Id"] != " ":
+                        # Line break to make space between lines
+                        description += "<br>"
             else:
-                if lectio_event["Teacher"] != " ":
+                if lectio_event["Teacher"] != " " and lectio_event["Id"] != " ":
                     # Line break to make space between lines
                     description += "<br>"
             
             # Adding link to the original Lectio event
-            description += '<a href="https://www.lectio.dk/lectio/143/' + lectio_event["EventLink"] + lectio_event["Id"] + '">Læs mere</a>'
-            
+            if lectio_event["Id"] != " ":
+                description += '<a href="https://www.lectio.dk/lectio/' + self.school_id + '/' + lectio_event["EventLink"] + lectio_event["Id"] + '">Læs mere</a>'
+
             # Formatting date and time to correct format - from "DD/MM-YYY HH:MM til HH:MM" to "YYYY-MM-DDTHH:MM:SS.MMMZ"
             times = lectio_event["Time"].split(" til ")
             date = times[0].split()[0].split("-")
             formatted_date = date[1] + "-" + date[0].split("/")[1] + "-" + date[0].split("/")[0]
             
-            dateTime_start = formatted_date + 'T' + times[0].split()[1] + ':00+01:00'
-            dateTime_end = formatted_date + 'T' + times[1] + ':00+01:00'
+            
+            dateTime_start = formatted_date + 'T' + times[0].split()[1] + ':00+02:00' # normally +01:00, but had to adjust for daylight savings
+            dateTime_end = formatted_date + 'T' + times[1] + ':00+02:00'     
             
             # Building dict with all necessary information
             event = {
@@ -192,7 +204,7 @@ class lectioToCalendar:
               'locked': 'true',
               'colorId': color,
               'source.title': "Lectio event",
-              'source.url': 'https://www.lectio.dk/lectio/143/aktivitet/aktivitetforside2.aspx?absid=' + lectio_event["Id"],
+              'source.url': 'https://www.lectio.dk/lectio/' + self.school_id + '/aktivitet/aktivitetforside2.aspx?absid=' + lectio_event["Id"],
               'start': {
                 'dateTime': dateTime_start,
                 'timeZone': 'Europe/Copenhagen',
@@ -202,10 +214,15 @@ class lectioToCalendar:
                 'timeZone': 'Europe/Copenhagen',
               }
             }
+            
             if location != None:
                 # If location is relevant, then add it
                 event['location'] = location
-            
+                
+            if lectio_event["Id"] == " ":
+                # If event doesn't have an ID, then make one
+                event['id'] = dateTime_start.replace("T","").replace("+","").replace(":","").replace("-","") + dateTime_end.replace("T","").replace("+","").replace(":","").replace("-","")
+
             # Append to list of all events
             Schedule.append(event)
             
@@ -225,7 +242,7 @@ class lectioToCalendar:
         #print(week_end_datetime.strftime("%Y-%m-%dT%H:%M:%S+01:00"))
         
         # Getting events from calendar
-        events = self.service.events().list(calendarId=self.calendarId, timeMin=week_start_datetime.strftime("%Y-%m-%dT%H:%M:%S+01:00"), timeMax=week_end_datetime.strftime("%Y-%m-%dT%H:%M:%S+01:00")).execute()
+        events = self.service.events().list(calendarId=self.calendarId, timeMin=week_start_datetime.strftime("%Y-%m-%dT%H:%M:%S+02:00"), timeMax=week_end_datetime.strftime("%Y-%m-%dT%H:%M:%S+02:00")).execute()
         
         old_events = []
         new_events = []
@@ -249,24 +266,23 @@ class lectioToCalendar:
         
         for extra_event in extra_events:
             # Deleting extra events
-            self.service.events().delete(calendarId=self.calendarId, eventId=extra_event).execute()
-        
+            try:
+                self.service.events().delete(calendarId=self.calendarId, eventId=extra_event).execute()
+            except:
+                print("Unable to delete event: " + extra_event)
+            
         for missing_event in missing_events:
             for event in weekSchedule:
                 if event["id"] == missing_event:
                     # Inserting new events into specified Google Calendar
                     try:
                         self.service.events().insert(calendarId=self.calendarId, body=event).execute()
-                        #print(str(missing_event) + " added to the calendar")
-                        break
                     except HttpError:
                         # Updating missing events for specified Google Calendar
                         try:
                             self.service.events().update(calendarId=self.calendarId, eventId=missing_event, body=event).execute()
-                            #print(str(missing_event) + " updated in the calendar")
-                            break
                         except:
-                            print("Missing event not inserted/updated: " + missing_event)
+                            print("Unable to add missing event: " + missing_event)
                             
         # Updating remaining events for specified Google Calendar
         for i in weekSchedule:
@@ -275,7 +291,7 @@ class lectioToCalendar:
                     # Updating existing event
                     self.service.events().update(calendarId=self.calendarId, eventId=i['id'], body=i).execute()
                 except:
-                    print("Existing event not updated: " + i['id'])
+                    print("Unable to update existing event: " + i['id'])
 
         #print("Weekly schedule updated!")
             

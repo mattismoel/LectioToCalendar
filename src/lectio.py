@@ -40,22 +40,19 @@ class Lectio:
 		# Getting student id
 		dashboard = session.get("https://www.lectio.dk/lectio/" + self.SchoolId + "/forside.aspx")
 		soup = BeautifulSoup(dashboard.text, features="html.parser")
-		studentIdFind = soup.find("a", {"id": "s_m_HeaderContent_subnavigator_ctl01"}, href=True)
+		studentIdFind = soup.find("a", {"id": "s_m_HeaderContent_subnavigator_ctl05"}, href=True)
 
 		if (studentIdFind == None):
-			print("Forkerte login detaljer")
+			raise Exception("Forkerte login detaljer")
 			exit()
 		else:
-			self.studentId = (studentIdFind['href']).replace("/lectio/" + self.SchoolId + "/forside.aspx?elevid=", '')
-
+			self.studentId = (studentIdFind['href']).replace("/lectio/" + self.SchoolId + "/OpgaverElev.aspx?elevid=", '')
 			self.Session = session
 
 	def getSchools(self):
 		result = schools.schools(self)
-
 		return result
 	
 	def getSchedule(self, week):
 		result = schedule.schedule(self, self.Session, self.SchoolId, self.studentId, week)
-
 		return result

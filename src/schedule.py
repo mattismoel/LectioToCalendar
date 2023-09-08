@@ -15,14 +15,14 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
     Schedule = {}
 
     for schedule in scheduleContainer:
-        
+
         rows = schedule['data-additionalinfo'].split("\n")
         timeStructure = re.compile('\d+/\d+-\d{4} \d{2}:\d{2} til \d{2}:\d{2}')
         teamStructure = re.compile('Hold: ')
         teacherStructure = re.compile('Lærer.*: ')
         roomStructure = re.compile('Lokale.*: ')
         noteStructure = re.compile(r"\W+")
-        
+
         # Getting the lesson id & Get the lesson if normal
         try:
             if "absid" in schedule['href']:
@@ -37,13 +37,14 @@ def schedule(self, Session, SchoolId, StudentId, WeekId):
             else:
                 print("Error, unable to get lesson id")
                 return False
-                
+
             lessonIdSplit2 = lessonIdSplit1[1].split("&prevurl=")
             lessonId = lessonIdSplit2[0]
-            
+
         except Exception:
             lessonId = " " #Some don't have URLs
-        
+            eventLink = " "
+
         #Check if there is a status
         if rows[0] == "Aflyst!" or rows[0] == "Ændret!":
             #print("found a status: {}".format(rows[0]))

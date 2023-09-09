@@ -18,6 +18,8 @@ class lectioToCalendar:
         self.user_name = usr
         self.password = psw
         self.school_id = schl_id
+
+        # Attempts to open the 'abbreviations.json' file and load its contents
         try:
             # full_path = os.path.dirname(__file__) 
             try:
@@ -28,13 +30,6 @@ class lectioToCalendar:
         except:
             print("File 'abbreviations.json' not found.")
             
-        # # Load abbreviations/codes for activities
-        # if os.path.exists('abbreviations.json'):
-        #     f = open('abbreviations.json')
-        #     self.codes = json.load(f)
-        # else:
-        #     raise Exception("File 'abbreviations.json' not found :(")
-
 
         # Define id of target calendar - use 'service.calendarList()' to see all id's
         self.calendarId = cal_id
